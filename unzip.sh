@@ -50,7 +50,6 @@ rm -rf $node_path
 ##############################################################################################
 echo 'Snapshot reverting'
 for i in ${node_start[@]};do
-##snapshot_list=(`virsh snapshot-list ${i} | awk '{print $1}' | sed  -n "/^snapshot/p"`)
 snapshot_list=(`virsh snapshot-list ${i} | tail -f -n 2 |awk '{print $1}' | sed  -n "/^snapshot/p"`)
 virsh snapshot-revert ${i} $snapshot_list
 done
