@@ -55,7 +55,8 @@ containers=(`ls -l $vm_path_one | awk '{print $9}' | sed  -n "/^$env_name/p"`)
 echo ${#containers[*]}
 for i in ${containers[@]} ; do
     vm_path_two=$(egrep "source file" $node_path/node_snapshot_$nodes.xml | cut -d "'" -f 2 | xargs dirname)
-    tar --append -f $env_name.tar $net_path $node_path $vm_path_two/${i} 
+    tar --append -f $env_name.tar $vm_path_two/${i} 
 done
+tar --append -f $env_name.tar $net_path $node_path
 $GZ -1 $env_name.tar
 echo "-=DONE=-"
