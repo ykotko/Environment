@@ -45,7 +45,7 @@ list=($(ls -1 ~/node_xml_save | tail -f -n 1))
 echo 'Creation of archive'
 vm_path_one=$(egrep -m 1 "source file" $node_path/$list | cut -d "'" -f 2 | xargs dirname)
 >>$env_name.tar
-containers=(`ls -l $vm_path_one | awk '{print $9}' | sed  -n "/^$env_name/p"`)
+containers=(`ls -1 $vm_path_one | sed  -n "/^$env_name/p"`)
 echo 'Images number:'${#containers[*]}
 for i in ${containers[@]} ; do
     tar --append -f $env_name.tar $vm_path_one/${i} 
