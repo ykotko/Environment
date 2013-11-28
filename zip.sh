@@ -50,7 +50,7 @@ echo 'Images number:'${#containers[*]}
 for i in ${containers[@]} ; do
     tar --append -f $env_name.tar $vm_path_one/${i} 
 done
-tar --append -f $env_name.tar $net_path $node_path $snapshot_path
+tar -S --append -f $env_name.tar $net_path $node_path $snapshot_path
 $GZ -1 $env_name.tar
 #Clening section
 rm -rf $net_path # Cleaning dir "~/network_xml_save"
