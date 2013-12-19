@@ -56,4 +56,5 @@ $GZ -1 $env_name.tar
 rm -rf $net_path # Cleaning dir "~/network_xml_save"
 rm -rf $node_path   # Cleaning dir "~/node_xml_save"
 rm -rf $snapshot_path #Cleaning dir "~/snapshot_xml_save"
+rm $env_name.tar #Removing tar 
 echo "-=DONE=-"
