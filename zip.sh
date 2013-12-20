@@ -44,17 +44,16 @@ done
 list=($(ls -1 ~/node_xml_save | tail -f -n 1))
 echo 'Creation of archive'
 vm_path_one=$(egrep -m 1 "source file" $node_path/$list | cut -d "'" -f 2 | xargs dirname)
->>$env_name.tar
+#>>$env_name.tar.gz
 containers=(`ls -1 $vm_path_one | sed  -n "/^$env_name/p"`)
 echo 'Images number:'${#containers[*]}
 for i in ${containers[@]} ; do
-    tar --append -f $env_name.tar $vm_path_one/${i} 
+#    tar --append -z -f $env_name.tar.gz $vm_path_one/${i} 
+    FLIST="$FLIST $vm_path_one/${i}"
 done
-tar -S --append -f $env_name.tar $net_path $node_path $snapshot_path
-$GZ -1 $env_name.tar
+tar cvf - $net_path $node_path $snapshot_path $FLIST | $GZ -1 - > $env_name.tar.gz
 #Clening section
 rm -rf $net_path # Cleaning dir "~/network_xml_save"
 rm -rf $node_path   # Cleaning dir "~/node_xml_save"
 rm -rf $snapshot_path #Cleaning dir "~/snapshot_xml_save"
-rm $env_name.tar #Removing tar 
 echo "-=DONE=-"
