@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 if [[ -z "$1" ]]; then
      echo "NO <ENV_NAME>"
 #    echo "USAGE: $0 ENV_NAME"
@@ -12,7 +11,8 @@ env_name="$1"
 node_path=~/node_xml_save
 #Path where configuration xmls of networks will be saved
 net_path=~/network_xml_save
-
+#Path where configuration xmls of snapshots will be saved
+snapshot_path=~/snapshot_xml_save
 
 echo 'Unzip archive'
 tar -xvzf $env_name.tar.gz -C /
@@ -29,10 +29,6 @@ virsh net-start ${i}
 virsh net-autostart ${i}
 done
 
-
-rm -rf $net_path # Cleaning dir "~/network_xml_save"
-
-
 echo 'Define VM'
 nodes=(`ls -l $node_path | awk '{print $9}'`)
 echo ${#nodes[*]}
@@ -40,18 +36,24 @@ for i in ${nodes[@]} ; do
     virsh define $node_path/${i}
 done
 node_start=(`virsh list --all | awk '{print $2}' | sed  -n "/^$env_name/p"`)
+
+echo 'Define snapshots'
+snapshot_list=(`ls -1 $snapshot_path`)
 for i in ${node_start[@]} ; do
-virsh start ${i}
-virsh autostart ${i}
+    virsh snapshot-create ${i} $snapshot_path/$i*xml # $snapshot_list
 done
 
-rm -rf $node_path
-
-##############################################################################################
 echo 'Snapshot reverting'
 for i in ${node_start[@]};do
-snapshot_list=(`virsh snapshot-list ${i} | awk '{print $1}' | sed  -n "/^snapshot/p"`)
-#snapshot_list=(`virsh snapshot-list ${i} | tailf -n 2 |awk '{print $1}' | sed  -n "/^snapshot/p"`)
-virsh snapshot-revert ${i} $snapshot_list
+snapshot_list_name=(`virsh snapshot-list ${i} | tail -f -n +3 |awk '{print $1}' | sed  -n "/^$env_name/p"`)
+virsh snapshot-revert ${i} $snapshot_list_name
+echo "Ready ${i}"
 done
 
+
+
+#Clening section
+rm -rf $net_path # Cleaning dir "~/network_xml_save"
+rm -rf $node_path   # Cleaning dir "~/node_xml_save"
+rm -rf $snapshot_path #Cleaning dir "~/snapshot_xml_save"
+echo "-=Done=-"

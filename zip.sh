@@ -10,36 +10,28 @@ env_name="$1"
 
 rm -f $env_name".tar.*"
 
-
 #Path where configuration xmls of VMs whill be saves
 node_path=~/node_xml_save
 #Path where configuration xmls of networks will be saved
 net_path=~/network_xml_save/
-
+#Path where configuration xmls of snapshots will be saved
+snapshot_path=~/snapshot_xml_save/
 GZ=`which pigz || which gzip`
-
-echo 'VM snapshot creation'
 mkdir -p ~/network_xml_save
 mkdir -p ~/node_xml_save
+mkdir -p ~/snapshot_xml_save
+
+echo 'VM snapshot creation'
 nodes=(`virsh list --all | awk '{print $2}' | sed  -n "/^$env_name/p"`) 
 echo ${#nodes[*]}
 for i in ${nodes[@]} ; do
-    virsh snapshot-create-as ${i} snapshot_$(date '+%Y-%m-%d-%H-%M')
+    virsh snapshot-create-as ${i} ${i}_$(date '+%Y-%m-%d-%H-%M')
     echo "${i} is  Ready"
-done
-
-echo 'Nodes .xmls save'
-for i in ${nodes[@]} ; do
     virsh dumpxml ${i} > $node_path/node_snapshot_${i}.xml
     echo "${i} is  Ready"
-done 
-
-
-vm_path_one=$(egrep "source file" $node_path/node_snapshot_$nodes.xml | cut -d "'" -f 2 | xargs dirname) 
-
-
-
-
+    snapshots=(`virsh snapshot-list ${i} | tail -f | awk '{print $1}'| sed  -n "/^$env_name/p"`)
+    virsh snapshot-dumpxml ${i} $snapshots > $snapshot_path/$snapshots.xml    
+done
 
 echo 'Network .xmls save' 
 nets=(`virsh net-list --all | awk '{print $1}' | sed  -n "/$env_name/p"`)
@@ -49,13 +41,19 @@ for i in ${nets[@]} ; do
     echo "${i} is Ready"
 done
 
+list=($(ls -1 ~/node_xml_save | tail -f -n 1))
 echo 'Creation of archive'
->>$env_name.tar
-containers=(`ls -l $vm_path_one | awk '{print $9}' | sed  -n "/^$env_name/p"`)
-echo ${#containers[*]}
+vm_path_one=$(egrep -m 1 "source file" $node_path/$list | cut -d "'" -f 2 | xargs dirname)
+#>>$env_name.tar.gz
+containers=(`ls -1 $vm_path_one | sed  -n "/^$env_name/p"`)
+echo 'Images number:'${#containers[*]}
 for i in ${containers[@]} ; do
-    vm_path_two=$(egrep "source file" $node_path/node_snapshot_$nodes.xml | cut -d "'" -f 2 | xargs dirname)
-    tar --append -f $env_name.tar $net_path $node_path $vm_path_two/${i} 
+#    tar --append -z -f $env_name.tar.gz $vm_path_one/${i} 
+    FLIST="$FLIST $vm_path_one/${i}"
 done
-$GZ -1 $env_name.tar
+tar cvf - $net_path $node_path $snapshot_path $FLIST | $GZ -1 - > $env_name.tar.gz
+#Clening section
+rm -rf $net_path # Cleaning dir "~/network_xml_save"
+rm -rf $node_path   # Cleaning dir "~/node_xml_save"
+rm -rf $snapshot_path #Cleaning dir "~/snapshot_xml_save"
 echo "-=DONE=-"
